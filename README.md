@@ -6,18 +6,17 @@ to the google API servers
 
 Usage:
 
-    python datastore_server.py --port=[PORT] --datastore_port=[PORT]
+    python datastore_server.py [--port=<port>] [--datastore_port=<port>]
 
-`PORT` -- the port on the local machine to run the server. 
-    defaults to `5555`
+Options:
+- `port`: The port on which to run the server. Defaults to `5555`
+- `datastore_port`: The port of the test datastore instance.
+  Defaults to `5556`
 
-`DATASTORE_PORT` -- the port of the test datastore instance on 
-    the local machine. Defaults to `5556`
 
-## Usage ##
-If running on a compute engine, no configuration is provided, simply
-run 
-    python development_server.py
+## Install ##
+If running on a compute engine instance, no configuration is request, simply
+run the server
 
 If connecting to the google cloud datastore remotely, set environment
 variables
@@ -35,3 +34,10 @@ Execute the local datastore using the comand
     bash gcd.sh start [DATASTORE_DIR] --port=5556
 
 and run the request forwarding server
+
+## Usage ##
+
+The server accepts requests on `http://localhost:<port>/` to google
+datastore APIs, authenticates the requests using appropriate credentials
+and forwards the requests to the appropriate server.
+
