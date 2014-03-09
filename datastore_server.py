@@ -12,6 +12,8 @@ from googledatastore import connection
 
 GOOGLE_API_URL = 'https://www.googleapis.com'
 
+LOCAL_PORT = 5555
+
 TEST_DATASTORE_PORT = 5556
 TEST_DATASTORE_URL = 'http://localhost:{}'.format(TEST_DATASTORE_PORT)
 
@@ -21,7 +23,7 @@ def get_credentials_from_env():
     http = httplib2.Http()
     credentials.authorize(http)
     credentials.refresh(http)
-    print('connect using compute credentials')
+    logging.info('connect using compute credentials')
     return credentials
   except (client.AccessTokenRefreshError, httplib2.HttpLib2Error, socket.error):
     if (os.getenv('DATASTORE_SERVICE_ACCOUNT')
@@ -32,9 +34,9 @@ def get_credentials_from_env():
           os.getenv('DATASTORE_SERVICE_ACCOUNT'),
           key,
           connection.SCOPE)
-        print('connect using signed JWT credentials')
+        logging.info('connect using signed JWT credentials')
         return credentials
-    print('connect using no credentials')
+    logging.warn('connect using no credentials')
     return None
 
 class Datastore():
@@ -46,11 +48,8 @@ class Datastore():
       self.host = GOOGLE_API_URL
     
   def post(self, path, headers, payload):
-    print("Forwarding request to {}".format(path))
-    print("\tRequest headers: {}".format(headers))
-    print("\tRequest body: {}".format(payload))
-    print('done')
-    print(self.host + path)
+    logging.info("Forwarding request to {}".format(path))
+    logging.info(self.host + path)
     return self._http.request(
       self.host + path, method='POST', 
       body=payload, 
@@ -94,13 +93,29 @@ class RequestForwarder(BaseHTTPServer.BaseHTTPRequestHandler):
   def send_invalid_length_response(self):
     self.send_error(401, 'Content length required')
     
+
+def parse_args():
+    global LOCAL_PORT, TEST_DATASTORE_PORT
+    args = sys.argv[:]
+    for arg in args:
+        if arg.startswith('--port='):
+            LOCAL_PORT = int(arg[len('--port='):])
+        if arg.startswith('--datastore_port='):
+            DATASTORE_PORT = int(arg[len('--datastore_port='):])
+        
+
+
 if __name__ == '__main__':
+  parse_args()
   credentials = get_credentials_from_env()
   datastore = Datastore(credentials)
   def request_handler(request, client_address, server):
     forwarder = RequestForwarder(request, client_address, server, datastore)
     return forwarder
-  httpd = BaseHTTPServer.HTTPServer( ('localhost', 5555), request_handler)
+  httpd = BaseHTTPServer.HTTPServer( 
+        ('localhost', LOCAL_PORT), 
+        request_handler)
+  print('starting auth server on {}'.format(LOCAL_PORT))
   httpd.serve_forever()
       
 
